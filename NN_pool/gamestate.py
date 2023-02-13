@@ -75,9 +75,9 @@ class GameState:
             if ind != 4:
                 if ind > 4 or ind < len(ball_placement_sequence):
                     if ind < 4:
-                        ball_iteration = ball.BallSprite(ball_placement_sequence[ind])
+                        ball_iteration = ball.Ball(ball_placement_sequence[ind])
                     else:
-                        ball_iteration = ball.BallSprite(ball_placement_sequence[ind - 1])
+                        ball_iteration = ball.Ball(ball_placement_sequence[ind - 1])
                     ball_iteration.move_to(initial_place + coord_shift * counter)
                     self.balls.append(ball_iteration)
             if counter[1] == counter[0]:
