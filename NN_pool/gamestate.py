@@ -13,20 +13,29 @@ from collisions import check_if_ball_touches_balls
 
 
 class GameState:
-    def __init__(self, ball_number = config.max_ball_num):
+    def __init__(self, ball_number = config.max_ball_num,poolEnv = False,verbose = True):
         zope.event.subscribers.append(self.game_event_handler)
         self.reset_state()
         self.set_pool_balls(ball_number)
         self.generate_table()
         self.cue = cue.Cue(self.white_ball)
-
+        self.poolEnv = poolEnv
+        self.verbose = verbose
+        self.array_holes = self.set_array_holes()
+        
     def game_event_handler(self, event):
         if event.type == "POTTED":
-            if event.data.number == 0 or event.data.number == 8:
+            
+            #Regles 8 ball pool classique
+            #if event.data.number == 0 or event.data.number == 8:
+            #    self.game_over(False)
+            if event.data.number == 0 :
                 self.game_over(False)
             else:
-                self.balls.remove(event.data)
-                self.potted.append(event.data.number)
+                for ball in self.balls:
+                    if(ball.number == event.data.number):
+                        self.balls.remove(ball)
+                        self.potted.append(event.data.number)
     
     def reset_state(self):
         self.potted = []
@@ -75,9 +84,9 @@ class GameState:
             if ind != 4:
                 if ind > 4 or ind < len(ball_placement_sequence):
                     if ind < 4:
-                        ball_iteration = ball.BallSprite(ball_placement_sequence[ind])
+                        ball_iteration = ball.Ball(ball_placement_sequence[ind])
                     else:
-                        ball_iteration = ball.BallSprite(ball_placement_sequence[ind - 1])
+                        ball_iteration = ball.Ball(ball_placement_sequence[ind - 1])
                     ball_iteration.move_to(initial_place + coord_shift * counter)
                     self.balls.append(ball_iteration)
             if counter[1] == counter[0]:
@@ -85,6 +94,13 @@ class GameState:
                 counter[1] = -counter[0]
             else:
                 counter[1] += 2
+                
+    def set_array_holes(self):
+        array_holes = np.zeros((2,len(self.holes)))
+        
+        for i in range(len(self.holes)):
+            array_holes[:,i] = self.holes[i].pos/config.resolution
+        return array_holes 
     
     def generate_table(self):
         table_side_points = np.empty((1, 2))
@@ -130,18 +146,29 @@ class GameState:
 
     def check_pool_rules(self):
         self.check_remaining()
-        self.check_potted()
+        #self.check_potted()
         self.turn_over()
-        self.next_turn()
+        if(self.poolEnv == False):
+            self.next_turn()
 
     def check_remaining(self):
-        remaining = False
+        remaining_white = False
+        #for remaining_ball in self.balls:
+        #    remaining = remaining_ball.number != 0 and remaining_ball.number != 8
+        
         for remaining_ball in self.balls:
-            remaining = remaining_ball.number != 0 and remaining_ball.number != 8
-        ball_remaining = remaining
-        self.potting_8ball = not ball_remaining
+            if(remaining_ball.number == 0):
+                remaining_white = True
+        
+        if(not remaining_white) : 
+            self.game_over(False)
+        elif(remaining_white and len(self.balls) == 1):
+            self.game_over(True)
+        
+        #self.potting_8ball = not ball_remaining
 
     def check_potted(self):
+        print(self.potted)
         if 0 in self.potted:
             self.game_over(False)
         if 8 in self.potted:
@@ -150,17 +177,34 @@ class GameState:
             else:
                 self.game_over(False)
     
-    def turn_over(self):
+    def turn_over(self,verbose = True):
         self.turn_number += 1
-        print("State :")
-        for ball in self.balls:
-            print(ball.number, ": ", ball.pos)
+        if(self.verbose):
+            print("State :")
+            for ball in self.balls:
+                print(ball.number, ": ", ball.pos)
 
 
     def next_turn(self):
         print("Tour :", self.turn_number)
         print("Nombre de balles rentrées :", len(self.potted))
-        angle = int(input("Angle de tir (0 à 360 degrés) ? "))
+        angle = int(input("Angle de tir (0 à 360 degrés) ? "))/360*2*np.pi
         displacement = int(input("Puissance de tir (0 à " + str(config.cue_max_displacement) + ") ? "))
         self.cue.ball_hit(angle, displacement)
         self.potted = []
+        
+    def next_turn_poolEnv(self,angle,force):
+        if(self.verbose):
+            print("Tour :", self.turn_number)
+            print("Nombre de balles rentrées :", len(self.potted))
+        #discrete case
+        #self.cue.ball_hit(angle/360*2*np.pi, force)
+        
+        #continuous case
+        self.cue.ball_hit(angle*2*np.pi,force*80 + 20)   
+        self.potted = []
+        
+        
+        
+        
+        

@@ -9,6 +9,7 @@ if len(sys.argv) <= 1:
 else:
     game = gamestate.GameState(int(sys.argv[1]))
 
+game = gamestate.GameState(2,poolEnv = False0)
 while not game.is_game_over:
     collisions.resolve_all_collisions(game.balls, game.holes, game.table_sides)
     game.update_balls()
