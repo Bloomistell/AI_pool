@@ -13,7 +13,7 @@ from collisions import check_if_ball_touches_balls
 
 
 class GameState:
-    def __init__(self, ball_number = config.max_ball_num,poolEnv = False,verbose = True):
+    def __init__(self, ball_number = config.max_ball_num,poolEnv = False,verbose = True,continuous_action = False):
         zope.event.subscribers.append(self.game_event_handler)
         self.reset_state()
         self.set_pool_balls(ball_number)
@@ -22,6 +22,7 @@ class GameState:
         self.poolEnv = poolEnv
         self.verbose = verbose
         self.array_holes = self.set_array_holes()
+        self.continuous_action = continuous_action
         
     def game_event_handler(self, event):
         if event.type == "POTTED":
@@ -197,12 +198,14 @@ class GameState:
         if(self.verbose):
             print("Tour :", self.turn_number)
             print("Nombre de balles rentrées :", len(self.potted))
-        #discrete case
-        #self.cue.ball_hit(angle/360*2*np.pi, force)
         
-        #continuous case
-        self.cue.ball_hit(angle*2*np.pi,force*80 + 20)   
-        self.potted = []
+        if(not self.continuous_action):
+            self.cue.ball_hit(angle/360*2*np.pi, force)
+            self.potted = []
+        else:
+            #continuous case
+            self.cue.ball_hit(angle*2*np.pi,force*80 + 20)   
+            self.potted = []
         
         
         

@@ -29,12 +29,14 @@ import DDPG
 
 CFG = {
     'CONTINUOUS_ACTION_SPACE' : True,
-    'ALPHA'        : -1,
-    'BETA'         : 0,
-    'DELTA'        : 0, 
+    'CYLINDRICAL'  : True,
+    'ALPHA'        : -5,
+    'BETA'         : 100,
+    'DELTA'        : 25, 
+    'LOST_REWARD'  : -10,
     'NUM_BALLS'    : 2,
-    'MAX_TURNS' : 1,
-    'EPISODES' : 50000,
+    'MAX_TURNS' : 3,
+    'EPISODES' : 5000,
     'LR_Q' : 0.0001,
     'LR_MU': 0.001,
     'HIDDEN_LAYER_1_MU_SIZE': 128,
@@ -42,8 +44,8 @@ CFG = {
     'HIDDEN_LAYER_1_Q_SIZE' : 64,
     'HIDDEN_LAYER_2_Q_SIZE' : 256,
     'HIDDEN_LAYER_3_Q_SIZE' : 64,
-    'PURE_EXPLORATION_STEPS' : 10000,
-    'GAUSSIAN_NOISE_EXPLORATION_STEPS' : 10000,
+    'PURE_EXPLORATION_STEPS' : 1000,
+    'GAUSSIAN_NOISE_EXPLORATION_STEPS' : 1000,
     'MEM_SIZE' : 1000000,
     'BATCH_SIZE' : 64,
     'GAMMA' : 0.99,
@@ -52,7 +54,7 @@ CFG = {
     'GAUSSIAN_NOISE_LEVEL_DECAY' : 0.9993,
     'GAUSSIAN_NOISE_LEVEL_MIN' : 0.000
 }
-print(CFG['HIDDEN_LAYER_1_MU_SIZE'])
+
 env = poolenv.PoolEnv(CFG)
 agent = DDPG.DDPG(env,CFG)
 gaussian_noise_level = CFG['GAUSSIAN_NOISE_LEVEL_MAX']
@@ -64,12 +66,12 @@ average_reward_number = []
 score_number= []
 n_observation_state = gym.spaces.utils.flatdim(env.observation_space)
 
+print(env.game.array_holes.shape)
 j=0
 for i in tqdm(range(1, CFG['EPISODES'])):
     state = env.reset()
     score = 0
     state = np.reshape(np.concatenate([state['whiteBall'][:,None],state['nonWhiteBall']],axis = 1), [1, n_observation_state])
-    
     while True:
         j+=1
         

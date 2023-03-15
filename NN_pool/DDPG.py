@@ -26,8 +26,8 @@ class criticQNet(torch.nn.Module):
         '''
         super().__init__()
         self.CFG = CFG 
+        self.env = env
         
-        self.array_holes = torch.unsqueeze(torch.Tensor(env.game.array_holes.flatten()),dim = 0).expand(CFG['BATCH_SIZE'],-1)
         self.input_shape = gym.spaces.utils.flatdim(env.observation_space) + env.game.array_holes.flatten().shape[0]
         self.action_shape = gym.spaces.utils.flatdim(env.action_space)
         
@@ -40,7 +40,9 @@ class criticQNet(torch.nn.Module):
         
     def forward(self, state,action):
         
-        res_states_holes = torch.cat([state.squeeze(),self.array_holes],dim = -1)
+        array_holes = torch.unsqueeze(torch.Tensor(self.env._get_holes().flatten()),dim = 0).expand(self.CFG['BATCH_SIZE'],-1)
+        
+        res_states_holes = torch.cat([state.squeeze(),array_holes],dim = -1)
         res_states_holes =  F.relu(self.fc_states_holes(res_states_holes))
     
         res_action = F.relu(self.fc_action(action))
@@ -56,17 +58,20 @@ class actorMuNet(torch.nn.Module):
         
         super().__init__()
         self.CFG = CFG 
+        self.env  = env
         
-        self.array_holes = torch.unsqueeze(torch.Tensor(env.game.array_holes.flatten()),dim = 0)
         self.input_shape = gym.spaces.utils.flatdim(env.observation_space) + env.game.array_holes.flatten().shape[0]
         self.action_space = gym.spaces.utils.flatdim(env.action_space)
        
         self.fc1 = nn.Linear(self.input_shape, self.CFG['HIDDEN_LAYER_1_MU_SIZE'])
-        self.fc2 = nn.Linear( self.CFG['HIDDEN_LAYER_1_MU_SIZE'],  self.CFG['HIDDEN_LAYER_2_MU_SIZE'])
-        self.fc3 = nn.Linear( self.CFG['HIDDEN_LAYER_2_MU_SIZE'], self.action_space)
+        self.fc2 = nn.Linear(self.CFG['HIDDEN_LAYER_1_MU_SIZE'],  self.CFG['HIDDEN_LAYER_2_MU_SIZE'])
+        self.fc3 = nn.Linear(self.CFG['HIDDEN_LAYER_2_MU_SIZE'], self.action_space)
     
     def forward(self, state):
-        res  =  torch.cat([state.squeeze(),self.array_holes.expand(state.shape[0],-1).squeeze()],dim = -1)
+        
+        array_holes = torch.unsqueeze(torch.Tensor(self.env._get_holes().flatten()),dim = 0)
+        
+        res  =  torch.cat([state.squeeze(),array_holes.expand(state.shape[0],-1).squeeze()],dim = -1)
         res = F.relu(self.fc1(res))
         res = F.relu(self.fc2(res))
         res = F.sigmoid(self.fc3(res))
